@@ -310,17 +310,22 @@ module powerbi.extensibility.visual {
         };
         for (let index = 0, length = Math.max(category.values.length, dataValue.values.length); index < length; index++) {
             let defaultColor: string;
+            let defaultColorNegativetarget: string;
             if (targetValue) {
-                let colorValue: number =  (<number> dataValue.values[index]) / (<number> targetValue.values[index]);
+                let colorValue: number = (<number>dataValue.values[index]) / (<number>targetValue.values[index]);
                 if (colorValue < zoneSettings.zone1Value / 100) {
                     defaultColor = zoneSettings.zone1Color;
+                    defaultColorNegativetarget = zoneSettings.zone3Color;//Incorrect zone color display is noticed for negative values .Storing zone3Color for zone1 defaultColorNegativetarget will give expected behaviour 
                 } else if (colorValue < zoneSettings.zone2Value / 100) {
                     defaultColor = zoneSettings.zone2Color;
+                    defaultColorNegativetarget = zoneSettings.zone2Color;
                 } else {
                     defaultColor = zoneSettings.zone3Color;
+                    defaultColorNegativetarget = zoneSettings.zone1Color;//Incorrect zone color display is noticed for negative values .Storing zone1Color for zone3 defaultColorNegativetarget will give expected behaviour
                 }
             } else {
                 defaultColor = zoneSettings.defaultColor;
+                defaultColorNegativetarget = zoneSettings.defaultColor;
             }
             let formatter: IValueFormatter = valueFormatter.create({ format: options.dataViews[0].categorical.categories[0].source.format });
             const newValues: ITooltipDataPoints[] = [];
@@ -331,9 +336,10 @@ module powerbi.extensibility.visual {
                     newValues.push(tooltipValues[index + cntIterator * lengthValues]);
                 }
             }
-            KPIColumnDataPoints.push({
+                KPIColumnDataPoints.push({
                 category: formatter.format(category.values[index]),
-                color: defaultColor,
+                //For negative target values, zone color are displayed incorrectly.Updated the logic for displaying correct default colors for negative target values also
+                color: targetValue ? targetValue.values[index]<0? defaultColorNegativetarget : defaultColor : defaultColor,
                 forecasted: forecasted ? forecasted.values[index] : null,
                 selectionId: host.createSelectionIdBuilder()
                     .withCategory(category, index)
@@ -342,6 +348,7 @@ module powerbi.extensibility.visual {
                 value: dataValue.values[index],
                 ytd: targetValue ? targetValue.values[index] : null,
             });
+        
         }
         const fontstyle: string = "Segoe UI,wf_segoe-ui_normal,helvetica,arial,sans-serif";
         let xAxisHeight: void  =
